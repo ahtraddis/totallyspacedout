@@ -1,5 +1,9 @@
 .App {
+  font-family: "HelveticaNeue";
   text-align: center;
+  background-color: #fff;
+  margin: 0 auto;
+  width: 800px;
 }
 
 .App-logo {
@@ -35,4 +39,40 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.container {
+  padding-top: 25px;
+  padding-bottom: 25px;
+  color: #eee;
+}
+
+.canvas {
+  width: 800px;
+  height: 800px;
+}
+
+.wrapper {
+  width: 576px;
+  margin: 0 auto;
+}
+
+.form-inline {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  justify-content: center;
+}
+
+.form-control {
+  text-transform: uppercase;
+}
+label {
+  text-transform: uppercase;
+}
+
+.row {
+  margin-left: 0;
+}
+.form-row {
+  margin-bottom: 1em;
 }

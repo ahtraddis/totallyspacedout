@@ -21,3 +21,13 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Google Services (e.g. APIs or Firebase)
+.firebaserc
+firebase-debug.log
+.firebase
+
+# Local project files
+workspace/*
+
+package-lock.json
