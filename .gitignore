@@ -31,3 +31,4 @@ firebase-debug.log
 workspace/*
 
 package-lock.json
+.vscode/*

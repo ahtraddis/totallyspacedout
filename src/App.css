@@ -1,78 +1,149 @@
-.App {
-  font-family: "HelveticaNeue";
-  text-align: center;
-  background-color: #fff;
-  margin: 0 auto;
-  width: 800px;
+body {
+  font-family: "Open Sans", Helvetica, Arial, sans-serif;
+  color: #444;
+  background-color: #36a0c8;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* styles matching teamfxaustin.org */
 .container {
-  padding-top: 25px;
-  padding-bottom: 25px;
-  color: #eee;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(100, 100, 100, 0.3);
+  padding: 1em 2.857142857rem;
+  margin-top: 3.428571429rem;
+  margin-bottom: 3.428571429rem;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
 }
-
-.canvas {
-  width: 800px;
-  height: 800px;
+.banner {
+  padding: 1rem 0;
 }
-
-.wrapper {
-  width: 576px;
-  margin: 0 auto;
-}
-
-.form-inline {
-  margin-top: 1em;
-  margin-bottom: 1em;
-  justify-content: center;
-}
-
-.form-control {
-  text-transform: uppercase;
-}
-label {
-  text-transform: uppercase;
+.banner img {
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  width: 100%;
 }
 
 .row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.leftCol {
+  line-height: 1.3em;
+}
+
+@media screen and (max-width: 880px) {
+  .banner {
+    padding-top: 0;
+  }
+  .container {
+    padding: 1em;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  .leftCol {
+    margin-bottom: 1em;
+  }
+}
+
+@media screen and (min-width: 880px) {
+  .leftCol {
+    flex: 0 0 576px;
+    flex-direction: column;
+  }
+  .rightCol {
+    flex: 1;
+    flex-direction: column;
+    padding: 0 2em;
+  }
+}
+
+/* match MUI input field border */
+.signinBox {
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 10px;
+}
+.userSignedIn {
+  display: flex;
+  align-items: center;
+}
+.userAvatar {
+  margin-right: .5em;
+}
+.userMessage {
+  flex: 1;
+  align-items: center;
+  font-size: 14px;
+}
+.userSigninPrompt {
+  font-size: .8em;
+}
+
+.footnote {
+  margin: 1em 0;
+}
+.footnote p {
+  font-size: .8em;
+}
+.photos {
+  margin: 15px 0 10px 0;
+}
+.photos img {
+  margin-right: 8px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* text styles */
+.header {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: normal;
+}
+.subheader {
+  margin-top: 0;
+  font-weight: normal;
+}
+.tagline {
+  margin-bottom: 0;
+}
+
+/* MUI overrides */
+.MuiInputLabel-root {
+  text-transform: uppercase;
+}
+.MuiTextField-root, .MuiButtonBase-root {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* FirebaseUI overrides */
+.firebaseui-container {
   margin-left: 0;
 }
-.form-row {
-  margin-bottom: 1em;
+.firebaseui-idp-list {
+  margin-bottom: 0;
+}
+.firebaseui-idp-list>.firebaseui-list-item {
+  margin-bottom: .2em;
+}
+.firebaseui-idp-list>.firebaseui-list-item {
+  text-align: left;
+}
+.firebaseui-card-content {
+  padding: 0;
+}
+
+/* Loader/hiding */
+#loading {
+  margin: 10px;
+}
+.hidden {
+  display: none;
 }
