@@ -26,6 +26,7 @@ yarn-error.log*
 #.firebaserc
 firebase-debug.log
 .firebase
+database.rules.json
 
 # Local project files
 workspace/*
