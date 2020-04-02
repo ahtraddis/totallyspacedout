@@ -53,6 +53,7 @@ function App() {
 
   const canvasWidth = 576;
   const canvasHeight = 576;
+  const printScale = 1;
   const pinRadius = 7;
   const pinMarginHor = 28;
   const pinMarginVer = 17;
@@ -227,6 +228,8 @@ function App() {
       document.getElementById('photo').style.display = 'none';
     }
 
+    firebase.analytics().logEvent('login', { method: 'facebook' });
+
     // Check for entry matching user's Facebook ID (first match), if so set state/fields
     firebase.database().ref(dataRoot + '/bibs').orderByChild('uid').equalTo(fbId).limitToFirst(1).once('value').then(function(snap) {
       const val = snap.val();
@@ -251,25 +254,10 @@ function App() {
   // Sign out user from Facebook
   const signOut = function() {
     firebase.auth().signOut().then(function() {
-      // reset form/state
+      // todo: reset form/state
+      firebase.analytics().logEvent('logout', { method: 'facebook' });
     });
   };
-
-  // Delete user's Firebase auth account (but don't - just sign out so they can access bib later)
-  // const deleteAccount = function() {
-  //   firebase.auth().currentUser.delete().catch(function(error) {
-  //     if (error.code === 'auth/requires-recent-login') {
-  //       // The user's credential is too old. She needs to sign in again.
-  //       firebase.auth().signOut().then(function() {
-  //         // The timeout allows the message to be displayed after the UI has
-  //         // changed to the signed out state.
-  //         // setTimeout(function() {
-  //         //   alert('Please sign in again to delete your account.');
-  //         // }, 1);
-  //       });
-  //     }
-  //   });
-  // };
 
   const missionText = new fabric.Text(defaults.missionText, {
     fontFamily: 'Arial',
@@ -391,7 +379,7 @@ function App() {
   }
 
   useEffect(() => {
-    canvas = new fabric.Canvas("c");
+    canvas = new fabric.StaticCanvas("c");
     canvas.selection = false; // disable group selection
     canvas.add(bibGroup);
     canvas.add(textGroup);
@@ -434,20 +422,20 @@ function App() {
     getBibNumber();
 
     window.addEventListener("resize", resize);
-    // Set initial full width dimensions
-    canvas.setDimensions({width: canvasWidth, height: canvasHeight});
+    // Set initial dimensions
     resize();
 
   }, []);
 
   function resize() {
+    let ratio = 1; // default
     const containerPadding = 32;
     if ((window.outerWidth - containerPadding) < canvasWidth) {
-      let ratio = (window.outerWidth - containerPadding) / canvasWidth;
-      console.log("resizing: ", window.innerWidth, window.outerWidth, ratio);
-      canvas.setZoom(ratio);
-      canvas.setDimensions({width: canvasWidth * ratio, height: canvasHeight * ratio});
+      ratio = (window.outerWidth - containerPadding) / canvasWidth;
     }
+    //console.log("resizing: ", window.innerWidth, window.outerWidth, ratio);
+    canvas.setZoom(ratio);
+    canvas.setDimensions({width: canvasWidth * ratio, height: canvasHeight * ratio});
   };
 
   const nameChanged = (event) => {
@@ -472,6 +460,11 @@ function App() {
         name: name,
         city: city,
       });
+      firebase.analytics().logEvent('download', {
+        name: name,
+        city: city,
+        bib: bibNum,
+      });
       outputPng(bibNum);
     }
     else {
@@ -494,6 +487,11 @@ function App() {
           });
           // [eschwartz-TODO] Set with useState()
           bibKey = ref.key;
+          firebase.analytics().logEvent('download', {
+            name: name,
+            city: city,
+            bib: snap.val(),
+          });
           outputPng(snap.val());
         }
       });
@@ -501,6 +499,9 @@ function App() {
   };
 
   function outputPng(bibNum) {
+    // Rescale to print scale momentarily
+    canvas.setDimensions({width: canvasWidth * printScale, height: canvasHeight * printScale});
+    canvas.setZoom(printScale);
     const dataURL = canvas.toDataURL({
       format: 'png',
     });
@@ -510,6 +511,8 @@ function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    // Revert to original scale
+    resize();
   };
 
   return (
@@ -539,8 +542,6 @@ function App() {
             <canvas
               className="canvas"
               id="c"
-              //width={canvasWidth}
-              //height={canvasHeight}
             />
           </div>
           <div className="rightCol">

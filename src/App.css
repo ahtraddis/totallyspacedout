@@ -115,7 +115,7 @@ body {
 }
 
 /* MUI overrides */
-.MuiInputLabel-root {
+.MuiInputLabel-root, .MuiOutlinedInput-input {
   text-transform: uppercase;
 }
 .MuiTextField-root, .MuiButtonBase-root {
