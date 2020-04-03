@@ -42,7 +42,6 @@ function App() {
   const defaults = {
     name: "GALACTIC GARY",
     city: "SPICEWOOD, TX",
-    dateText: "APRIL 5, 2020",
     missionText: "CREATING A WORLD\nWITHOUT CHILD ABUSE & NEGLECT\nONE STEP AT A TIME",
     missionSubText: "www.teamfxaustin.org",
     baseFilename: "TotallySpacedOut_Virtual10K_BIB_",
@@ -143,7 +142,7 @@ function App() {
 
   const createTextGroup = () => {
     bibText = new fabric.Text(defaults.initialBibNum.toString().padStart(bibNumberPad, '0'), {
-      fontFamily: 'HelveticaNeue-CondensedBold',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontSize: 190,
       originX: 'center',
       selectable: false,
@@ -155,7 +154,7 @@ function App() {
 
     nameText = new fabric.Text(defaults.name, {
       top: 360,
-      fontFamily: 'HelveticaNeue-CondensedBold',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontSize: 75,
       originX: 'center',
       selectable: false,
@@ -163,7 +162,7 @@ function App() {
 
     cityText = new fabric.Text(defaults.city, {
       top: 430,
-      fontFamily: 'HelveticaNeue-CondensedBold',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontSize: 55,
       color: '#000',
       originX: 'center',
@@ -176,7 +175,7 @@ function App() {
         nameText,
         cityText
       ], {
-      top: 143,
+      top: 163,
       left: canvasWidth / 2,
       width: canvasWidth,
       originX: 'center',
@@ -283,16 +282,6 @@ function App() {
     selectable: false,
   });
 
-  const dateText = new fabric.Text(defaults.dateText, {
-    fontFamily: 'Arial',
-    fontWeight: 'bold',
-    fontSize: 20,
-    originX: 'center',
-    left: canvasWidth / 2,
-    top: 455,
-    selectable: false,
-  });
-
   const firebaseConfig = {
     apiKey: "AIzaSyA5YPtHlkeNukHqx8tXVuW8koMuD4SP9XE",
     authDomain: "totallyspacedout-902d4.firebaseapp.com",
@@ -385,15 +374,15 @@ function App() {
     canvas.add(textGroup);
     canvas.add(missionText);
     canvas.add(missionSubText);
-    canvas.add(dateText);
 
-    fabric.Image.fromURL('./images/logoCroppedTrans.png', function(oImg) {
+    fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
       oImg.set({
         selectable: false,
-        top: 1,
-        left: 102,
-        scaleX: .65,
-        scaleY: .65,
+        top: 0,
+        left: canvasWidth / 2,
+        originX: 'center',
+        scaleX: .65,//.65,
+        scaleY: .65,//.65,
       })
       canvas.add(oImg);
     });
@@ -401,7 +390,7 @@ function App() {
     fabric.Image.fromURL('./images/TeamFXLogo576.png', function(oImg) {
       oImg.set({
         selectable: false,
-        top: -50,
+        top: -30,
         opacity: 0.2,
         overflow: 'hidden',
       })
