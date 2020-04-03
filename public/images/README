@@ -1,0 +1,1 @@
+convert -resize x1000 -extent 1024x1024 -background white -gravity center TeamFXLogo.png TeamFXLogo1024.png
