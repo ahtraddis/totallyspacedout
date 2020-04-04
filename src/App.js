@@ -765,7 +765,7 @@ function App() {
         <div className="leftCol">
           Coach Gary’s LIVE Virtual 10K Run from beautiful Spicewood, Texas will be live-streamed on the <Link className={classes.link} target="_blank" href="https://www.facebook.com/groups/123345373412">Team FX Facebook Group</Link> on <strong>Sunday, April 5th, 2020 at 8am-9am CST</strong>.
           You don't even have to run a 10K! Just post your own pics from anywhere &ndash; doing any activity, inside or outside &ndash; as long as you observe all safety orders for your area.
-          It’s very important that we agree to STAY TOTALLY SPACED OUT (at least 6 feet apart)! Sorry, NO high-fives, NO shared water bottles, and NO hugs at the finish line. And be sure to watch Gary's <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">safety video</Link>!
+          It’s very important that we agree to STAY TOTALLY SPACED OUT (at least 6 feet apart)! Sorry, NO high-fives, NO shared water bottles, and NO hugs at the finish line. And be sure to watch Gary's <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TSO10K-SAFETY.m4v">safety video</Link>!
         </div>
         <div className="rightCol">
           <Button
