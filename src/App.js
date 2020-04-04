@@ -342,7 +342,7 @@ function App() {
 
   function createTextGroup() {
     bibTextRef.current = new fabric.Text(bibNum.toString().padStart(bibNumberPad, '0'), {
-      fontFamily: 'Roboto Condensed',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontWeight: 'bold',
       fontSize: 190,
       originX: 'center',
@@ -354,7 +354,7 @@ function App() {
     bibTextRef.current.set({top: (canvasHeight - h) / 2});
     nameTextRef.current = new fabric.Text(name ? name : defaults.name, {
       top: 360,
-      fontFamily: 'Roboto Condensed',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontWeight: 'bold',
       fontSize: 75,
       originX: 'center',
@@ -362,7 +362,7 @@ function App() {
     });
     cityTextRef.current = new fabric.Text(city ? city : defaults.city, {
       top: 430,
-      fontFamily: 'Roboto Condensed',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontWeight: 'bold',
       fontSize: 55,
       color: '#000',
@@ -388,7 +388,7 @@ function App() {
 
   function createTextGroupForPrint(num) {
     bibTextRef2.current = new fabric.Text(num.toString().padStart(bibNumberPad, '0'), {
-      fontFamily: 'Roboto Condensed',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontWeight: 'bold',
       fontSize: 190,
       originX: 'center',
@@ -400,7 +400,7 @@ function App() {
     bibTextRef2.current.set({top: (canvasHeight - h) / 2});
     nameTextRef2.current = new fabric.Text(name ? name : defaults.name, {
       top: 360,
-      fontFamily: 'Roboto Condensed',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontWeight: 'bold',
       fontSize: 75,
       originX: 'center',
@@ -408,7 +408,7 @@ function App() {
     });
     cityTextRef2.current = new fabric.Text(city ? city : defaults.city, {
       top: 430,
-      fontFamily: 'Roboto Condensed',
+      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
       fontWeight: 'bold',
       fontSize: 55,
       color: '#000',
