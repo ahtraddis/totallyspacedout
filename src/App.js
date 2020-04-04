@@ -640,7 +640,14 @@ function App() {
           Team FX invites EVERYONE to participate in this FREE, SAFE, grassroots, "spaced out" virtual community benefit event! No fees or registration required. Please just observe all safety orders for your area, and follow the simple steps below.
         </div>
         <div className="rightCol">
-          <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Why the “TOTALLY SPACED OUT” 10K?</Link>
+          <ul>
+            <li>
+              <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Why the “TOTALLY SPACED OUT” 10K?</Link>
+            </li>
+            <li>
+              <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TSO10K-SAFETY.m4v">Watch Coach Gary's safety video!</Link>
+            </li>
+          </ul>
         </div>
       </div>
       
@@ -776,7 +783,7 @@ function App() {
       <h2>4. Party On!</h2>
       <div className="row">
         <div className="leftCol">
-          <p>After the virtual race, we'll celebrate at SAFE's <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TeamFX-Mojito-Party.jpg">Virtual Afterparty</Link> at 4pm CST! More details on the <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Team FX website</Link>. Please stay involved! Now more than ever is the time to be part of this community wholeness movement by considering a Team FX membership at any level TODAY.</p>
+          <p>After the virtual race, we'll celebrate at SAFE's <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TeamFX-Mojito-Party.jpg">Virtual Afterparty</Link> at 4pm CST! Please stay involved. Now more than ever is the time to be part of this community wholeness movement by considering a Team FX membership at any level TODAY.</p>
           <Link target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TeamFX-Mojito-Party.jpg"><img alt="" src="./images/TeamFXMojitoParty150x150.jpg" /></Link>
         </div>
         <div className="rightCol">
