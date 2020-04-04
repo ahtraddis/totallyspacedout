@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { fabric } from 'fabric';
-import './App.css';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, Button, TextField, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-const firebase = require('firebase/app');
+import './App.css';
+import { fabric } from 'fabric';
 require('firebase/database');
 require('firebase/analytics');
+const firebase = require('firebase/app');
 var firebaseui = require('firebaseui');
 
 const useStyles = makeStyles((theme) => ({
@@ -30,15 +30,6 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function App() {
-  const classes = useStyles();
-  
-  var canvas;
-  // move these to useState()
-  var fbId = null;
-  var bibKey = null;
-  var bibNum = null;
-
-  var bibText, nameText, cityText, bibGroup, textGroup;
   const defaults = {
     name: "GALACTIC GARY",
     city: "SPICEWOOD, TX",
@@ -47,12 +38,30 @@ function App() {
     baseFilename: "TotallySpacedOut_Virtual10K_BIB_",
     tosUrl: "https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions",
     privacyPolicyUrl: "https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions",
-    initialBibNum: 0,
   };
+
+  const classes = useStyles();
+  const [bibNum, setBibNumber] = useState(0);
+  const [name, setName] = useState('');
+  const [city, setCity] = useState('');
+  const [firebaseUserId, setFirebaseUserId] = useState(null);
+  const [bibKey, setBibKey] = useState(null);
+  const [showBib, setShowBib] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [authLoaded, setAuthLoaded] = useState(false);
+  
+  const canvasRef = useRef(null);
+  const printCanvasRef = useRef(null);
+  const bibTextRef = useRef(0);
+  const nameTextRef = useRef(0);
+  const cityTextRef = useRef(0);
+  const bibTextRef2 = useRef(0);
+  const nameTextRef2 = useRef(0);
+  const cityTextRef2 = useRef(0);
+
 
   const canvasWidth = 576;
   const canvasHeight = 576;
-  const printScale = 1;
   const pinRadius = 7;
   const pinMarginHor = 28;
   const pinMarginVer = 17;
@@ -66,8 +75,158 @@ function App() {
   const bibNumberPad = 3;
   const dataRoot = '/'; // change to '/TEST' for dev/test
 
+  const getBibNumber = () => {
+    // get current counter value (the last bib number used)
+    firebase.database().ref(dataRoot + '/counter').once('value').then(function(snap) {
+      setBibNumber(snap.val() + 1);
+      //console.log("getBibNumber(): ", snap.val() + 1);
+      setShowBib(true);
+      setLoading(false);
+    });
+  };
+
+  // show Facebook Login if not signed in
+  const handleSignedOutUser = function() {
+    setAuthLoaded(true);
+    ui.start('#firebaseui-auth-container', getUiConfig());
+  };
+
+  // [eschwartz-TODO] This is firing twice; on second time, canvas is undefined
+  // (so check existence before canvas.renderAll())
+  const handleSignedInUser = function(user) {
+    //console.log("handleSignedInUser");
+    setFirebaseUserId(user.uid); // firebaseUserId not readable in this callback? (see useCallback?)
+    setAuthLoaded(true);
+    firebase.analytics().logEvent('login', { method: 'facebook' });
+
+    if (user.photoURL) {
+      var photoURL = user.photoURL;
+      // Append size to the photo URL for Google hosted images to avoid requesting
+      // the image with its original resolution (using more bandwidth than needed)
+      // when it is going to be presented in smaller size.
+      if ((photoURL.indexOf('googleusercontent.com') !== -1) ||
+          (photoURL.indexOf('ggpht.com') !== -1)) {
+        photoURL = photoURL + '?sz=' + document.getElementById('photo').clientHeight;
+      }
+      document.getElementById('photo').src = photoURL;
+      document.getElementById('photo').style.display = 'block';
+    } else {
+      document.getElementById('photo').style.display = 'none';
+    }
+
+    // Check for entry matching user's Facebook ID (first match), if so set state/fields
+    if (user.uid) {
+      firebase.database().ref(dataRoot + '/bibs').orderByChild('uid').equalTo(user.uid).limitToFirst(1).once('value').then(function(snap) {
+        const val = snap.val();
+        if (val) {
+          const key = Object.keys(val)[0];
+          const data = val[key];
+          if (data) {
+            setName(data.name);
+            setCity(data.city);
+            setBibKey(key);
+            setBibNumber(data.bib);
+          }
+        }
+        setShowBib(true);
+      });
+    }
+  };
+
+  // Sign out user from Facebook
+  const signOut = function() {
+    firebase.auth().signOut().then(function() {
+      firebase.analytics().logEvent('logout', { method: 'facebook' });
+      setFirebaseUserId(null);
+      setBibKey(null);
+      setName('');
+      setCity('');
+      getBibNumber();
+    });
+  };
+
+  
+
+  
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA5YPtHlkeNukHqx8tXVuW8koMuD4SP9XE",
+    authDomain: "totallyspacedout-902d4.firebaseapp.com",
+    databaseURL: "https://totallyspacedout-902d4.firebaseio.com",
+    projectId: "totallyspacedout-902d4",
+    storageBucket: "totallyspacedout-902d4.appspot.com",
+    messagingSenderId: "109883277311",
+    appId: "1:109883277311:web:e280b5d62184f2fdf9f1ca",
+    measurementId: "G-FQLSGGEK6S"
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  firebase.analytics();
+
+  // Initialize the FirebaseUI Widget using Firebase.
+  var ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebase.auth());
+  ui.disableAutoSignIn(); // [eschwartz-TODO] This doesn't seem to work
+  
+  function getUiConfig() {
+    return {
+      callbacks: {
+        signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+          // User successfully signed in
+          if (authResult.user) {
+            handleSignedInUser(authResult.user);
+          }
+          if (authResult.additionalUserInfo) {
+            //console.log("additionalUserInfo: ", authResult.additionalUserInfo);
+            // document.getElementById('is-new-user').textContent =
+            //     authResult.additionalUserInfo.isNewUser ?
+            //     'New User' : 'Existing User';
+          }
+          // Return type of false means don't redirect automatically
+          return false;
+        },
+        uiShown: function() {
+          // Widget is rendered, hide the loader
+          //setLoading(false);
+        }
+      },
+      // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
+      signInFlow: 'popup',
+      signInSuccessUrl: '/',
+      signInOptions: [
+        {
+          provider: firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+          // scopes: [
+          //   'public_profile',
+          //   'email',
+          //   'user_likes',
+          //   'user_friends'
+          // ],
+          // scopes: [
+          //   'https://www.googleapis.com/auth/contacts.readonly'
+          // ],
+          // customParameters: {
+          //   // Forces account selection even when one account
+          //   // is available.
+          //   prompt: 'select_account'
+          // }
+        },
+        // Leave the lines as is for the providers you want to offer your users.
+        //firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+        //firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+        // firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+        // firebase.auth.GithubAuthProvider.PROVIDER_ID,
+        // firebase.auth.EmailAuthProvider.PROVIDER_ID,
+        // firebase.auth.PhoneAuthProvider.PROVIDER_ID
+      ],
+      //tosUrl: defaults.tosUrl,
+      //privacyPolicyUrl: defaults.privacyPolicyUrl,
+    };
+  }
+
   const createBibGroup = () => {
-    let rect = new fabric.Rect({
+    const rect = new fabric.Rect({
       selectable: false,
       fill: 'white',
       stroke: pinStrokeColor,
@@ -127,7 +286,7 @@ function App() {
       selectable: false,
     });
   
-    bibGroup = new fabric.Group([
+    const bibGroup = new fabric.Group([
       rect,
       topLeftCircle,
       topRightCircle,
@@ -138,42 +297,84 @@ function App() {
     ], {
       selectable: false,
     });
+    return bibGroup;
   };
 
-  const createTextGroup = () => {
-    bibText = new fabric.Text(defaults.initialBibNum.toString().padStart(bibNumberPad, '0'), {
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+  function createTextGroup2() {
+    const missionText = new fabric.Text(defaults.missionText, {
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+      fontSize: 22,
+      originX: 'center',
+      textAlign: 'center',
+      lineHeight: .8,
+      left: canvasWidth / 2,
+      top: canvasHeight - 86,
+      selectable: false,
+    });
+
+    const missionSubText = new fabric.Text(defaults.missionSubText, {
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+      fontSize: 14,
+      originX: 'center',
+      textAlign: 'center',
+      lineHeight: .9,
+      left: canvasWidth / 2,
+      top: canvasHeight - 21,
+      selectable: false,
+    });
+    
+    const textGroup = new fabric.Group(
+      [
+        missionText,
+        missionSubText
+      ], {
+      top: 489,
+      left: canvasWidth / 2,
+      width: canvasWidth,
+      originX: 'center',
+      selectable: false,
+    });
+
+    return textGroup;
+  }
+
+  function createTextGroup() {
+    bibTextRef.current = new fabric.Text(bibNum.toString().padStart(bibNumberPad, '0'), {
+      fontFamily: 'Roboto Condensed',
+      fontWeight: 'bold',
       fontSize: 190,
       originX: 'center',
       selectable: false,
       opacity: 1,
     });
     // center vertically once bounding box is established
-    let h = bibText.getBoundingRect().height;
-    bibText.set({top: (canvasHeight - h) / 2});
-
-    nameText = new fabric.Text(defaults.name, {
+    let h = bibTextRef.current.getBoundingRect().height;
+    bibTextRef.current.set({top: (canvasHeight - h) / 2});
+    nameTextRef.current = new fabric.Text(name ? name : defaults.name, {
       top: 360,
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: 'Roboto Condensed',
+      fontWeight: 'bold',
       fontSize: 75,
       originX: 'center',
       selectable: false,
     });
-
-    cityText = new fabric.Text(defaults.city, {
+    cityTextRef.current = new fabric.Text(city ? city : defaults.city, {
       top: 430,
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: 'Roboto Condensed',
+      fontWeight: 'bold',
       fontSize: 55,
       color: '#000',
       originX: 'center',
       selectable: false,
     });
 
-    textGroup = new fabric.Group(
+    const textGroup = new fabric.Group(
       [
-        bibText,
-        nameText,
-        cityText
+        bibTextRef.current,
+        nameTextRef.current,
+        cityTextRef.current
       ], {
       top: 163,
       left: canvasWidth / 2,
@@ -181,209 +382,65 @@ function App() {
       originX: 'center',
       selectable: false,
     });
+
+    return textGroup;
   };
 
-  function setBibNumber(bibNum) {
-    bibText.set('text', bibNum.toString().padStart(bibNumberPad, '0'));
-    if (canvas) canvas.renderAll();
-  };
-
-  const getBibNumber = () => {
-    // get current counter value (the last bib number used)
-    firebase.database().ref(dataRoot + '/counter').once('value').then(function(snap) {
-      bibNum = snap.val() + 1;
-      setBibNumber(bibNum);
-      document.getElementById('bibloaded').style.display = 'block';
+  function createTextGroupForPrint(num) {
+    bibTextRef2.current = new fabric.Text(num.toString().padStart(bibNumberPad, '0'), {
+      fontFamily: 'Roboto Condensed',
+      fontWeight: 'bold',
+      fontSize: 190,
+      originX: 'center',
+      selectable: false,
+      opacity: 1,
     });
-  };
-
-  // show Facebook Login if not signed in
-  const handleSignedOutUser = function() {
-    document.getElementById('user-signed-in').style.display = 'none';
-    document.getElementById('user-signed-out').style.display = 'block';
-    //document.getElementById('bibloaded').style.display = 'block';
-    ui.start('#firebaseui-auth-container', getUiConfig());
-  };
-
-  // [eschwartz-TODO] This is firing twice; on second time, canvas is undefined
-  // (so check existence before canvas.renderAll())
-  const handleSignedInUser = function(user) {
-    fbId = user.uid; // [eschwartz-TODO] Set fbId with useState()
-    document.getElementById('user-signed-in').style.display = 'block';
-    document.getElementById('user-signed-out').style.display = 'none';
-
-    if (user.photoURL) {
-      var photoURL = user.photoURL;
-      // Append size to the photo URL for Google hosted images to avoid requesting
-      // the image with its original resolution (using more bandwidth than needed)
-      // when it is going to be presented in smaller size.
-      if ((photoURL.indexOf('googleusercontent.com') !== -1) ||
-          (photoURL.indexOf('ggpht.com') !== -1)) {
-        photoURL = photoURL + '?sz=' + document.getElementById('photo').clientHeight;
-      }
-      document.getElementById('photo').src = photoURL;
-      document.getElementById('photo').style.display = 'block';
-    } else {
-      document.getElementById('photo').style.display = 'none';
-    }
-
-    firebase.analytics().logEvent('login', { method: 'facebook' });
-
-    // Check for entry matching user's Facebook ID (first match), if so set state/fields
-    firebase.database().ref(dataRoot + '/bibs').orderByChild('uid').equalTo(fbId).limitToFirst(1).once('value').then(function(snap) {
-      const val = snap.val();
-      if (val) {
-        const key = Object.keys(val)[0];
-        const data = val[key];
-        if (data) {
-          document.getElementById('name').value = data.name;
-          document.getElementById('city').value = data.city;
-          nameText.set('text', data.name);
-          cityText.set('text', data.city);
-          setBibNumber(data.bib);
-          // [eschwartz-TODO] Set with useState(). Setting globals for now.
-          bibKey = key;
-          bibNum = data.bib;
-        }
-      }
-      document.getElementById('bibloaded').style.display = 'block';
-    }, canvas);
-  };
-
-  // Sign out user from Facebook
-  const signOut = function() {
-    firebase.auth().signOut().then(function() {
-      // todo: reset form/state
-      firebase.analytics().logEvent('logout', { method: 'facebook' });
+    // center vertically once bounding box is established
+    let h = bibTextRef2.current.getBoundingRect().height;
+    bibTextRef2.current.set({top: (canvasHeight - h) / 2});
+    nameTextRef2.current = new fabric.Text(name ? name : defaults.name, {
+      top: 360,
+      fontFamily: 'Roboto Condensed',
+      fontWeight: 'bold',
+      fontSize: 75,
+      originX: 'center',
+      selectable: false,
     });
+    cityTextRef2.current = new fabric.Text(city ? city : defaults.city, {
+      top: 430,
+      fontFamily: 'Roboto Condensed',
+      fontWeight: 'bold',
+      fontSize: 55,
+      color: '#000',
+      originX: 'center',
+      selectable: false,
+    });
+
+    const textGroup = new fabric.Group(
+      [
+        bibTextRef2.current,
+        nameTextRef2.current,
+        cityTextRef2.current
+      ], {
+      top: 163,
+      left: canvasWidth / 2,
+      width: canvasWidth,
+      originX: 'center',
+      selectable: false,
+    });
+
+    return textGroup;
   };
 
-  const missionText = new fabric.Text(defaults.missionText, {
-    fontFamily: 'Arial',
-    fontWeight: 'bold',
-    fontSize: 22,
-    originX: 'center',
-    textAlign: 'center',
-    lineHeight: .8,
-    left: canvasWidth / 2,
-    top: canvasHeight - 86,
-    selectable: false,
-  });
-
-  const missionSubText = new fabric.Text(defaults.missionSubText, {
-    fontFamily: 'Arial',
-    fontWeight: 'bold',
-    fontSize: 14,
-    originX: 'center',
-    textAlign: 'center',
-    lineHeight: .9,
-    left: canvasWidth / 2,
-    top: canvasHeight - 21,
-    selectable: false,
-  });
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyA5YPtHlkeNukHqx8tXVuW8koMuD4SP9XE",
-    authDomain: "totallyspacedout-902d4.firebaseapp.com",
-    databaseURL: "https://totallyspacedout-902d4.firebaseio.com",
-    projectId: "totallyspacedout-902d4",
-    storageBucket: "totallyspacedout-902d4.appspot.com",
-    messagingSenderId: "109883277311",
-    appId: "1:109883277311:web:e280b5d62184f2fdf9f1ca",
-    measurementId: "G-FQLSGGEK6S"
-  };
-
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  firebase.analytics();
-
-  // Initialize the FirebaseUI Widget using Firebase.
-  var ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebase.auth());
-  ui.disableAutoSignIn(); // [eschwartz-TODO] This doesn't seem to work
-
-  firebase.auth().onAuthStateChanged(function(user) {
-    //console.log("onAuthStateChanged(): user: ", user);
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('loaded').style.display = 'block';
-    user ? handleSignedInUser(user) : handleSignedOutUser();
-  });
-
-  createBibGroup();
-  createTextGroup();
-  
-  function getUiConfig() {
-    return {
-      callbacks: {
-        signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-          // User successfully signed in
-          if (authResult.user) {
-            handleSignedInUser(authResult.user);
-          }
-          // if (authResult.additionalUserInfo) {
-          //   document.getElementById('is-new-user').textContent =
-          //       authResult.additionalUserInfo.isNewUser ?
-          //       'New User' : 'Existing User';
-          // }
-          // Return type of false means don't redirect automatically
-          return false;
-        },
-        uiShown: function() {
-          // Widget is rendered, hide the loader
-          //document.getElementById('loader').style.display = 'none';
-        }
-      },
-      // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
-      signInFlow: 'popup',
-      signInSuccessUrl: '/',
-      signInOptions: [
-        {
-          provider: firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-          // scopes: [
-          //   'public_profile',
-          //   'email',
-          //   'user_likes',
-          //   'user_friends'
-          // ],
-          // scopes: [
-          //   'https://www.googleapis.com/auth/contacts.readonly'
-          // ],
-          // customParameters: {
-          //   // Forces account selection even when one account
-          //   // is available.
-          //   prompt: 'select_account'
-          // }
-        },
-        // Leave the lines as is for the providers you want to offer your users.
-        //firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-        //firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-        // firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-        // firebase.auth.GithubAuthProvider.PROVIDER_ID,
-        // firebase.auth.EmailAuthProvider.PROVIDER_ID,
-        // firebase.auth.PhoneAuthProvider.PROVIDER_ID
-      ],
-      //tosUrl: defaults.tosUrl,
-      //privacyPolicyUrl: defaults.privacyPolicyUrl,
-    };
-  }
-
-  useEffect(() => {
-    canvas = new fabric.StaticCanvas("c");
-    canvas.selection = false; // disable group selection
-    canvas.add(bibGroup);
-    canvas.add(textGroup);
-    canvas.add(missionText);
-    canvas.add(missionSubText);
-
+  function addImages(canvas) {
     fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
       oImg.set({
         selectable: false,
-        top: 0,
         left: canvasWidth / 2,
         originX: 'center',
-        scaleX: .65,//.65,
-        scaleY: .65,//.65,
-      })
+        scaleX: .65,
+        scaleY: .65,
+      });
       canvas.add(oImg);
     });
 
@@ -391,13 +448,15 @@ function App() {
       oImg.set({
         selectable: false,
         top: -30,
+        left: canvasWidth / 2,
+        originX: 'center',
         opacity: 0.2,
         overflow: 'hidden',
       })
       canvas.add(oImg);
       canvas.sendBackwards(oImg);
     });
-
+    
     fabric.Image.fromURL('./images/TeamFXLogoSmall.png', function(oImg) {
       oImg.set({
         selectable: false,
@@ -407,14 +466,62 @@ function App() {
       })
       canvas.add(oImg);
     });
+  };
 
-    getBibNumber();
+  useEffect(() => {
+    function counterChanged(snapshot) {
+      //console.log("counterChanged(): counter (last used) = " + snapshot.val() + ", next = " + parseInt(snapshot.val() + 1));
+      // [eschwartz-TODO] Update only if not logged in
+      // if (!firebaseUserId) {
+      //   setBibNumber(snapshot.val() + 1);
+      //   setShowBib(true);
+      // }
+    };
+    const ref = firebase.database().ref(dataRoot + '/counter').on('value', counterChanged);
+    return () => {
+      ref.off('value', counterChanged);
+    }
+  }, []);
+
+  useEffect(() => {
+    canvasRef.current = new fabric.StaticCanvas("c");
+    canvasRef.current.selection = false; // disable group selection
+    canvasRef.current.setDimensions({width: canvasWidth, height: canvasHeight});
+    canvasRef.current.add(createBibGroup());
+    addImages(canvasRef.current);
+    canvasRef.current.add(createTextGroup(bibNum));
+    canvasRef.current.add(createTextGroup2());
+
+    printCanvasRef.current = new fabric.StaticCanvas("d");
+    printCanvasRef.current.setDimensions({width: canvasWidth, height: canvasHeight});
+    printCanvasRef.current.add(createBibGroup());
+    addImages(printCanvasRef.current);
+    printCanvasRef.current.add(createTextGroupForPrint("???"));
+    printCanvasRef.current.add(createTextGroup2());
+
+    firebase.auth().onAuthStateChanged(function(user) {
+      //console.log("onAuthStateChanged(): user: ", user);
+      user ? handleSignedInUser(user) : handleSignedOutUser();
+    });
 
     window.addEventListener("resize", resize);
     // Set initial dimensions
     resize();
-
+    getBibNumber();
   }, []);
+
+  // Update text on canvas if fields change in state
+  useEffect(() => {
+    bibTextRef.current.set('text', bibNum.toString().padStart(bibNumberPad, '0'));
+    nameTextRef.current.set('text', name.trim() ? name.trim() : defaults.name);
+    cityTextRef.current.set('text', city.trim() ? city.trim() : defaults.city);
+    canvasRef.current.renderAll();
+
+    nameTextRef2.current.set('text', name.trim() ? name.trim() : defaults.name);
+    cityTextRef2.current.set('text', city.trim() ? city.trim() : defaults.city);
+    printCanvasRef.current.renderAll();
+
+  }, [bibNum, name, city, defaults]);
 
   function resize() {
     let ratio = 1; // default
@@ -423,26 +530,38 @@ function App() {
       ratio = (window.outerWidth - containerPadding) / canvasWidth;
     }
     //console.log("resizing: ", window.innerWidth, window.outerWidth, ratio);
-    canvas.setZoom(ratio);
-    canvas.setDimensions({width: canvasWidth * ratio, height: canvasHeight * ratio});
+    canvasRef.current.setZoom(ratio);
+    canvasRef.current.setDimensions({width: canvasWidth * ratio, height: canvasHeight * ratio});
   };
 
-  const nameChanged = (event) => {
-    var value = event.target.value.trim();
-    nameText.set('text', value.toUpperCase());
-    canvas.renderAll();
+  function isValid(value) {
+    const regex = /^[a-zA-Z0-9,\s.?!@%*()#$^&+=\-_[\]/]{0,15}$/;
+    return (regex.test(value) === true);
+  }
+
+  function nameChanged(event) {
+    let value = event.target.value;
+    if (isValid(value)) {
+      setName(value.toUpperCase());
+    }
   };
 
-  const cityChanged = (event) => {
-    var value = event.target.value.trim();
-    cityText.set('text', value.toUpperCase());
-    canvas.renderAll();
+  function nameBlurred(event) {
+    setName(name.trim());
+  }
+
+  function cityChanged(event) {
+    let value = event.target.value;
+    if (isValid(value)) {
+      setCity(value.toUpperCase());
+    }
   };
 
-  const exportPng = () => {
-    const name = nameText.get('text');
-    const city = cityText.get('text');
+  function cityBlurred(event) {
+    setCity(city.trim());
+  }
 
+  const saveBib = () => {    
     // If key is known, update name and city but don't change bib number or Facebook UID
     if (bibKey) {
       firebase.database().ref(dataRoot + '/bibs/' + bibKey).update({
@@ -466,16 +585,16 @@ function App() {
         // }
         if (committed) {
           // counter update succeeded, write a new entry
-          bibText.set('text', snap.val().toString().padStart(bibNumberPad, '0'));
-          canvas.renderAll();
           var ref = firebase.database().ref(dataRoot + '/bibs').push({
             bib: snap.val(),
             name: name,
             city: city,
-            uid: fbId,
+            uid: firebaseUserId, // may be null, which Firebase omits
           });
-          // [eschwartz-TODO] Set with useState()
-          bibKey = ref.key;
+          // If signed in, remember key of created entry for updates
+          if (firebaseUserId) {
+            setBibKey(ref.key);
+          }
           firebase.analytics().logEvent('download', {
             name: name,
             city: city,
@@ -487,21 +606,25 @@ function App() {
     }
   };
 
-  function outputPng(bibNum) {
-    // Rescale to print scale momentarily
-    canvas.setDimensions({width: canvasWidth * printScale, height: canvasHeight * printScale});
-    canvas.setZoom(printScale);
-    const dataURL = canvas.toDataURL({
+  function outputPng(savedNum) {
+    bibTextRef2.current.set('text', savedNum.toString().padStart(bibNumberPad, '0'));
+    printCanvasRef.current.renderAll();
+
+    const dataURL = printCanvasRef.current.toDataURL({
       format: 'png',
     });
     const link = document.createElement('a');
-    link.download = `${defaults.baseFilename}${bibNum.toString().padStart(bibNumberPad, '0')}.png`;
+    link.download = `${defaults.baseFilename}${savedNum.toString().padStart(bibNumberPad, '0')}.png`;
     link.href = dataURL;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    // Revert to original scale
-    resize();
+    // Reset fields and advance number if not logged in
+    if (!firebaseUserId) {
+      getBibNumber();
+      setName('');
+      setCity('');
+    }
   };
 
   return (
@@ -522,21 +645,22 @@ function App() {
       </div>
       
       <h2>1. Create Your Bib</h2>
+      { loading && (
       <div id="loading">
         <CircularProgress />
       </div>
-      <div id="bibloaded" className="hidden">
+      )}
+      <div className={showBib ? "" : "hidden"}>
         <div className="row">
           <div className="leftCol">
-            <canvas
-              className="canvas"
-              id="c"
-            />
+            <canvas id="c" />
+            <canvas id="d" className="hidden" />
           </div>
           <div className="rightCol">
             <TextField
               id="name"
               label="Name"
+              value={name}
               style={{ margin: 8 }}
               placeholder={defaults.name}
               helperText="Make it spacey!"
@@ -547,11 +671,13 @@ function App() {
               InputLabelProps={{
                 shrink: true,
               }}
-              onChange={nameChanged} 
+              onChange={nameChanged}
+              onBlur={nameBlurred}
             />
             <TextField
               id="city"
               label="City"
+              value={city}
               style={{ margin: 8 }}
               placeholder={defaults.city}
               helperText="Where will you run?"
@@ -563,11 +689,13 @@ function App() {
                 shrink: true,
               }}
               onChange={cityChanged}
+              onBlur={cityBlurred}
             />
 
-            <div id="loaded" className="hidden">
+            <div className={authLoaded ? "authloaded" : "hidden"}>
               <div className="signinBox">
-                <div id="user-signed-in" className="hidden">
+                
+                <div className={firebaseUserId ? "signedin" : "hidden"}>
                   <div className="userSignedIn">
                     <div className="userAvatar">
                       <img alt="" id="photo" />
@@ -577,7 +705,7 @@ function App() {
                     </div>
                   </div>
                 </div>
-                <div id="user-signed-out" className="hidden">
+                <div className={firebaseUserId ? "hidden" : "signedout"}>
                   <div className="userSigninPrompt">
                     <strong>[OPTIONAL]</strong> To remember your bib for edits or reprints later, sign in before downloading below.
                   </div>
@@ -585,13 +713,13 @@ function App() {
                 <div id="firebaseui-auth-container"></div>
               </div>
             </div>
-
             <Button
               variant="contained"
               size="large"
               color="primary"
+              disabled={!(name.trim() && city.trim())}
               className={classes.button}
-              onClick={exportPng}
+              onClick={saveBib}
             >
               Download and Print
             </Button>
@@ -630,7 +758,7 @@ function App() {
         <div className="leftCol">
           Coach Gary’s LIVE Virtual 10K Run from beautiful Spicewood, Texas will be live-streamed on the <Link className={classes.link} target="_blank" href="https://www.facebook.com/groups/123345373412">Team FX Facebook Group</Link> on <strong>Sunday, April 5th, 2020 at 8am-9am CST</strong>.
           You don't even have to run a 10K! Just post your own pics from anywhere &ndash; doing any activity, inside or outside &ndash; as long as you observe all safety orders for your area.
-          It’s very important that we agree to STAY TOTALLY SPACED OUT (at least 6 feet apart)! Sorry, NO high-fives, NO shared water bottles, and NO hugs at the finish line.
+          It’s very important that we agree to STAY TOTALLY SPACED OUT (at least 6 feet apart)! Sorry, NO high-fives, NO shared water bottles, and NO hugs at the finish line. And be sure to watch Gary's <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">safety video</Link>!
         </div>
         <div className="rightCol">
           <Button
@@ -648,7 +776,8 @@ function App() {
       <h2>4. Party On!</h2>
       <div className="row">
         <div className="leftCol">
-          After the virtual race, we'll celebrate at SAFE's Virtual Afterparty at 4pm CST! More details soon on the <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Team FX website</Link>. Please stay involved! Now more than ever is the time to be part of this community wholeness movement by considering a Team FX membership at any level TODAY.
+          <p>After the virtual race, we'll celebrate at SAFE's <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TeamFX-Mojito-Party.jpg">Virtual Afterparty</Link> at 4pm CST! More details on the <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Team FX website</Link>. Please stay involved! Now more than ever is the time to be part of this community wholeness movement by considering a Team FX membership at any level TODAY.</p>
+          <Link target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TeamFX-Mojito-Party.jpg"><img alt="" src="./images/TeamFXMojitoParty150x150.jpg" /></Link>
         </div>
         <div className="rightCol">
           <Button
