@@ -36,6 +36,7 @@ function App() {
     missionText: "CREATING A WORLD\nWITHOUT CHILD ABUSE & NEGLECT\nONE STEP AT A TIME",
     missionSubText: "www.teamfxaustin.org",
     baseFilename: "TotallySpacedOut_Virtual10K_BIB_",
+    awardBaseFilename: "TotallySpacedOut_Virtual10K_Award",
     tosUrl: "https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions",
     privacyPolicyUrl: "https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions",
   };
@@ -49,9 +50,11 @@ function App() {
   const [showBib, setShowBib] = useState(false);
   const [loading, setLoading] = useState(true);
   const [authLoaded, setAuthLoaded] = useState(false);
+  const [displayName, setDisplayName] = useState(null);
   
   const canvasRef = useRef(null);
   const printCanvasRef = useRef(null);
+  const awardCanvasRef = useRef(null);
   const bibTextRef = useRef(0);
   const nameTextRef = useRef(0);
   const cityTextRef = useRef(0);
@@ -59,9 +62,14 @@ function App() {
   const nameTextRef2 = useRef(0);
   const cityTextRef2 = useRef(0);
 
+  const displayNameRef = useRef(0);
+  const awardCityRef = useRef(0);
+
 
   const canvasWidth = 576;
   const canvasHeight = 576;
+  const awardCanvasWidth = 792;
+  const awardCanvasHeight = 612;
   const pinRadius = 7;
   const pinMarginHor = 28;
   const pinMarginVer = 17;
@@ -94,7 +102,10 @@ function App() {
   // [eschwartz-TODO] This is firing twice; on second time, canvas is undefined
   // (so check existence before canvas.renderAll())
   const handleSignedInUser = function(user) {
-    //console.log("handleSignedInUser");
+    //console.log("handleSignedInUser: user: ", user);
+    if (user.displayName) {
+      setDisplayName(user.displayName);
+    }
     setFirebaseUserId(user.uid); // firebaseUserId not readable in this callback? (see useCallback?)
     setAuthLoaded(true);
     firebase.analytics().logEvent('login', { method: 'facebook' });
@@ -432,6 +443,91 @@ function App() {
     return textGroup;
   };
 
+  function addAwardImages(canvas) {
+    const rect = new fabric.Rect({
+      selectable: false,
+      fill: 'white',
+      width: awardCanvasWidth,
+      height: awardCanvasHeight,
+      //stroke: pinStrokeColor,
+    });
+    canvas.add(rect);
+
+    fabric.Image.fromURL('./images/TeamFXLogo1024a.png', function(oImg) {
+      oImg.set({
+        selectable: false,
+        top: 20,
+        scaleX: .12,
+        scaleY: .12,
+        left: awardCanvasWidth / 2,
+        originX: 'center',
+        opacity: 1,
+        overflow: 'hidden',
+      })
+      canvas.add(oImg);
+    });
+    
+    const introText = new fabric.Text("congratulates", {
+      fontFamily: 'Times New Roman',
+      fontStyle: 'italic',
+      fontSize: 22,
+      originX: 'center',
+      textAlign: 'center',
+      top: 148,
+      left: awardCanvasWidth / 2,
+      selectable: false,
+    }, origin);
+    canvas.add(introText);
+
+    displayNameRef.current = new fabric.Text(displayName ? displayName : "", {
+      fontFamily: 'Times New Roman',
+      textTransform: 'uppercase',
+      fontSize: 48,
+      originX: 'center',
+      textAlign: 'center',
+      top: 180,
+      left: awardCanvasWidth / 2,
+      selectable: false,
+    });
+    canvas.add(displayNameRef.current);
+
+    const participatingText = new fabric.Text("for participation in the", {
+      fontFamily: 'Times New Roman',
+      fontStyle: 'italic',
+      fontSize: 22,
+      originX: 'center',
+      textAlign: 'center',
+      top: 240,
+      left: awardCanvasWidth / 2,
+      selectable: false,
+    });
+    canvas.add(participatingText);
+
+    fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
+      oImg.set({
+        selectable: false,
+        top: 280,
+        left: awardCanvasWidth / 2,
+        originX: 'center',
+        scaleX: .65,
+        scaleY: .65,
+      });
+      canvas.add(oImg);
+    });
+
+    awardCityRef.current = new fabric.Text("presented Sunday, April 5, 2020\nin gratitude for your service to the SAFE Children's Shelter.", {
+      fontFamily: 'Times New Roman',
+      fontStyle: 'italic',
+      fontSize: 22,
+      originX: 'center',
+      textAlign: 'center',
+      top: 500,
+      left: awardCanvasWidth / 2,
+      selectable: false,
+    });
+    canvas.add(awardCityRef.current);
+  }
+
   function addImages(canvas) {
     fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
       oImg.set({
@@ -499,6 +595,10 @@ function App() {
     printCanvasRef.current.add(createTextGroupForPrint("???"));
     printCanvasRef.current.add(createTextGroup2());
 
+    awardCanvasRef.current = new fabric.StaticCanvas("award-canvas");
+    awardCanvasRef.current.setDimensions({width: awardCanvasWidth, height: awardCanvasHeight});
+    addAwardImages(awardCanvasRef.current);
+
     firebase.auth().onAuthStateChanged(function(user) {
       //console.log("onAuthStateChanged(): user: ", user);
       user ? handleSignedInUser(user) : handleSignedOutUser();
@@ -521,7 +621,11 @@ function App() {
     cityTextRef2.current.set('text', city.trim() ? city.trim() : defaults.city);
     printCanvasRef.current.renderAll();
 
-  }, [bibNum, name, city, defaults]);
+    displayNameRef.current.set('text', name ? name.toUpperCase() : "");
+    awardCityRef.current.set('text', "presented Sunday, April 5, 2020" + (  (isValid(city) && city) ? " in " + city : "")  + "\nin gratitude for your service to the SAFE Children's Shelter.");
+    awardCanvasRef.current.renderAll();
+
+  }, [bibNum, name, city, displayName, defaults]);
 
   function resize() {
     let ratio = 1; // default
@@ -606,6 +710,19 @@ function App() {
     }
   };
 
+  function outputAwardPng() {
+    awardCanvasRef.current.renderAll();
+    const dataURL = awardCanvasRef.current.toDataURL({
+      format: 'png',
+    });
+    const link = document.createElement('a');
+    link.download = `${defaults.awardBaseFilename}.png`;
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   function outputPng(savedNum) {
     bibTextRef2.current.set('text', savedNum.toString().padStart(bibNumberPad, '0'));
     printCanvasRef.current.renderAll();
@@ -647,10 +764,14 @@ function App() {
             <li>
               <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TSO10K-SAFETY.m4v">Watch Coach Gary's safety video!</Link>
             </li>
+            { (isValid(name) && name) && (
+            <li>
+              <Link className={classes.link} onClick={outputAwardPng}>Download award certificate</Link>
+            </li>
+            )}
           </ul>
         </div>
       </div>
-      
       <h2>1. Create Your Bib</h2>
       { loading && (
       <div id="loading">
@@ -660,6 +781,7 @@ function App() {
       <div className={showBib ? "" : "hidden"}>
         <div className="row">
           <div className="leftCol">
+            <canvas id="award-canvas" className="hidden" />
             <canvas id="c" />
             <canvas id="d" className="hidden" />
           </div>
