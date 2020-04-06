@@ -3,6 +3,8 @@ import { Link, Button, TextField, CircularProgress } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import './App.css';
 import { fabric } from 'fabric';
+import jsPDF from 'jspdf';
+
 require('firebase/database');
 require('firebase/analytics');
 const firebase = require('firebase/app');
@@ -20,6 +22,7 @@ const useStyles = makeStyles((theme) => ({
   },
   button: {
     margin: theme.spacing(1),
+    marginRight: '1em !important',
   },
   link: {
     fontWeight: 'bold'
@@ -28,6 +31,8 @@ const useStyles = makeStyles((theme) => ({
     fontSize: 14,
   },
 }));
+
+const getEpoch = () => Math.floor(new Date().getTime() / 1000)
 
 function App() {
   const defaults = {
@@ -52,19 +57,20 @@ function App() {
   const [authLoaded, setAuthLoaded] = useState(false);
   const [displayName, setDisplayName] = useState(null);
   
+  // screen canvas
   const canvasRef = useRef(null);
-  const printCanvasRef = useRef(null);
-  const awardCanvasRef = useRef(null);
   const bibTextRef = useRef(0);
   const nameTextRef = useRef(0);
   const cityTextRef = useRef(0);
+  // print canvas (copy)
+  const printCanvasRef = useRef(null);
   const bibTextRef2 = useRef(0);
   const nameTextRef2 = useRef(0);
   const cityTextRef2 = useRef(0);
-
+  // award canvas
+  const awardCanvasRef = useRef(null);
   const displayNameRef = useRef(0);
-  const awardCityRef = useRef(0);
-
+  const presentedTextRef = useRef(0);
 
   const canvasWidth = 576;
   const canvasHeight = 576;
@@ -81,6 +87,7 @@ function App() {
   const pinStrokeColor = '#777';
   const bibCornerRadius = 25;
   const bibNumberPad = 3;
+  const fontFamily = 'HelveticaNeue-CondensedBold, Roboto Condensed';
   const dataRoot = '/'; // change to '/TEST' for dev/test
 
   const getBibNumber = () => {
@@ -156,10 +163,6 @@ function App() {
     });
   };
 
-  
-
-  
-
   const firebaseConfig = {
     apiKey: "AIzaSyA5YPtHlkeNukHqx8tXVuW8koMuD4SP9XE",
     authDomain: "totallyspacedout-902d4.firebaseapp.com",
@@ -176,7 +179,7 @@ function App() {
   }
   firebase.analytics();
 
-  // Initialize the FirebaseUI Widget using Firebase.
+  // Initialize the FirebaseUI widget
   var ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(firebase.auth());
   ui.disableAutoSignIn(); // [eschwartz-TODO] This doesn't seem to work
   
@@ -190,9 +193,7 @@ function App() {
           }
           if (authResult.additionalUserInfo) {
             //console.log("additionalUserInfo: ", authResult.additionalUserInfo);
-            // document.getElementById('is-new-user').textContent =
-            //     authResult.additionalUserInfo.isNewUser ?
-            //     'New User' : 'Existing User';
+            // includes '.isNewUser'
           }
           // Return type of false means don't redirect automatically
           return false;
@@ -202,7 +203,6 @@ function App() {
           //setLoading(false);
         }
       },
-      // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
       signInFlow: 'popup',
       signInSuccessUrl: '/',
       signInOptions: [
@@ -353,7 +353,7 @@ function App() {
 
   function createTextGroup() {
     bibTextRef.current = new fabric.Text(bibNum.toString().padStart(bibNumberPad, '0'), {
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: fontFamily,
       fontWeight: 'bold',
       fontSize: 190,
       originX: 'center',
@@ -365,7 +365,7 @@ function App() {
     bibTextRef.current.set({top: (canvasHeight - h) / 2});
     nameTextRef.current = new fabric.Text(name ? name : defaults.name, {
       top: 360,
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: fontFamily,
       fontWeight: 'bold',
       fontSize: 75,
       originX: 'center',
@@ -373,7 +373,7 @@ function App() {
     });
     cityTextRef.current = new fabric.Text(city ? city : defaults.city, {
       top: 430,
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: fontFamily,
       fontWeight: 'bold',
       fontSize: 55,
       color: '#000',
@@ -399,7 +399,7 @@ function App() {
 
   function createTextGroupForPrint(num) {
     bibTextRef2.current = new fabric.Text(num.toString().padStart(bibNumberPad, '0'), {
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: fontFamily,
       fontWeight: 'bold',
       fontSize: 190,
       originX: 'center',
@@ -411,7 +411,7 @@ function App() {
     bibTextRef2.current.set({top: (canvasHeight - h) / 2});
     nameTextRef2.current = new fabric.Text(name ? name : defaults.name, {
       top: 360,
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: fontFamily,
       fontWeight: 'bold',
       fontSize: 75,
       originX: 'center',
@@ -419,7 +419,7 @@ function App() {
     });
     cityTextRef2.current = new fabric.Text(city ? city : defaults.city, {
       top: 430,
-      fontFamily: 'HelveticaNeue-CondensedBold, Roboto Condensed',
+      fontFamily: fontFamily,
       fontWeight: 'bold',
       fontSize: 55,
       color: '#000',
@@ -443,49 +443,71 @@ function App() {
     return textGroup;
   };
 
-  function addAwardImages(canvas) {
-    const rect = new fabric.Rect({
-      selectable: false,
-      fill: 'white',
-      width: awardCanvasWidth,
-      height: awardCanvasHeight,
-      //stroke: pinStrokeColor,
-    });
-    canvas.add(rect);
-
-    fabric.Image.fromURL('./images/TeamFXLogo1024a.png', function(oImg) {
+  function addAwardElements(canvas) {
+    // add elements to printable award canvas
+    // certificate reads as follows:
+    // (team fx logo)
+    // congratulates
+    // (name field)
+    // for participation in the
+    // (event logo)
+    // presented Sunday, April 5, 2020 in (AUSTIN, TX | city field)
+    // in gratitude for your service to the SAFE Children's Shelter.
+    fabric.Image.fromURL('./images/AwardCertificateFrameTrans3300x2550.png', function(oImg) {
       oImg.set({
         selectable: false,
-        top: 20,
-        scaleX: .12,
-        scaleY: .12,
+        top: 0,
         left: awardCanvasWidth / 2,
+        scaleX: 72/300,
+        scaleY: 72/300,
         originX: 'center',
         opacity: 1,
         overflow: 'hidden',
       })
       canvas.add(oImg);
     });
-    
+
+    const rect = new fabric.Rect({
+      selectable: false,
+      fill: 'white',
+      top: 58,
+      left: 60,
+      width: 672,
+      height: 495,
+    });
+    canvas.add(rect);
+
+    fabric.loadSVGFromURL('./images/TeamFX_Logo_Horiz_Document_v07jr_2020.svg', function(objects, options) {
+      var obj = fabric.util.groupSVGElements(objects, options);
+      obj.set({
+        top: 85,
+        scaleX: .052,
+        scaleY: .052,
+        originX: 'center',
+        left: awardCanvasWidth / 2,
+      });
+      canvas.add(obj).renderAll();
+    });
+
     const introText = new fabric.Text("congratulates", {
       fontFamily: 'Times New Roman',
       fontStyle: 'italic',
-      fontSize: 22,
+      fontSize: 20,
       originX: 'center',
       textAlign: 'center',
-      top: 148,
+      top: 200,
       left: awardCanvasWidth / 2,
       selectable: false,
     }, origin);
     canvas.add(introText);
 
-    displayNameRef.current = new fabric.Text(displayName ? displayName : "", {
+    displayNameRef.current = new fabric.Text("", {
       fontFamily: 'Times New Roman',
       textTransform: 'uppercase',
       fontSize: 48,
       originX: 'center',
       textAlign: 'center',
-      top: 180,
+      top: 230,
       left: awardCanvasWidth / 2,
       selectable: false,
     });
@@ -494,10 +516,10 @@ function App() {
     const participatingText = new fabric.Text("for participation in the", {
       fontFamily: 'Times New Roman',
       fontStyle: 'italic',
-      fontSize: 22,
+      fontSize: 20,
       originX: 'center',
       textAlign: 'center',
-      top: 240,
+      top: 285,
       left: awardCanvasWidth / 2,
       selectable: false,
     });
@@ -506,26 +528,26 @@ function App() {
     fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
       oImg.set({
         selectable: false,
-        top: 280,
+        top: 320,
         left: awardCanvasWidth / 2,
         originX: 'center',
-        scaleX: .65,
-        scaleY: .65,
+        scaleX: .5,
+        scaleY: .5,
       });
       canvas.add(oImg);
     });
 
-    awardCityRef.current = new fabric.Text("presented Sunday, April 5, 2020\nin gratitude for your service to the SAFE Children's Shelter.", {
+    presentedTextRef.current = new fabric.Text("", {
       fontFamily: 'Times New Roman',
       fontStyle: 'italic',
-      fontSize: 22,
+      fontSize: 16,
       originX: 'center',
       textAlign: 'center',
-      top: 500,
+      top: 483,
       left: awardCanvasWidth / 2,
       selectable: false,
     });
-    canvas.add(awardCityRef.current);
+    canvas.add(presentedTextRef.current);
   }
 
   function addImages(canvas) {
@@ -580,24 +602,25 @@ function App() {
   }, []);
 
   useEffect(() => {
-    canvasRef.current = new fabric.StaticCanvas("c");
+    // init display canvas
+    canvasRef.current = new fabric.StaticCanvas("display-canvas");
     canvasRef.current.selection = false; // disable group selection
     canvasRef.current.setDimensions({width: canvasWidth, height: canvasHeight});
     canvasRef.current.add(createBibGroup());
     addImages(canvasRef.current);
     canvasRef.current.add(createTextGroup(bibNum));
     canvasRef.current.add(createTextGroup2());
-
-    printCanvasRef.current = new fabric.StaticCanvas("d");
+    // init print canvas (copy)
+    printCanvasRef.current = new fabric.StaticCanvas("print-canvas");
     printCanvasRef.current.setDimensions({width: canvasWidth, height: canvasHeight});
     printCanvasRef.current.add(createBibGroup());
     addImages(printCanvasRef.current);
     printCanvasRef.current.add(createTextGroupForPrint("???"));
     printCanvasRef.current.add(createTextGroup2());
-
+    // init award canvas (for PDF output)
     awardCanvasRef.current = new fabric.StaticCanvas("award-canvas");
     awardCanvasRef.current.setDimensions({width: awardCanvasWidth, height: awardCanvasHeight});
-    addAwardImages(awardCanvasRef.current);
+    addAwardElements(awardCanvasRef.current);
 
     firebase.auth().onAuthStateChanged(function(user) {
       //console.log("onAuthStateChanged(): user: ", user);
@@ -622,7 +645,7 @@ function App() {
     printCanvasRef.current.renderAll();
 
     displayNameRef.current.set('text', name ? name.toUpperCase() : "");
-    awardCityRef.current.set('text', "presented Sunday, April 5, 2020" + (  (isValid(city) && city) ? " in " + city : "")  + "\nin gratitude for your service to the SAFE Children's Shelter.");
+    presentedTextRef.current.set('text', "presented Sunday, April 5, 2020 in " + ((city && isValid(city)) ? city : "Austin, Texas") + "\nin gratitude for your service to the SAFE Children's Shelter.");
     awardCanvasRef.current.renderAll();
 
   }, [bibNum, name, city, displayName, defaults]);
@@ -633,13 +656,13 @@ function App() {
     if ((window.outerWidth - containerPadding) < canvasWidth) {
       ratio = (window.outerWidth - containerPadding) / canvasWidth;
     }
-    //console.log("resizing: ", window.innerWidth, window.outerWidth, ratio);
     canvasRef.current.setZoom(ratio);
     canvasRef.current.setDimensions({width: canvasWidth * ratio, height: canvasHeight * ratio});
   };
 
+  // validate text fields
   function isValid(value) {
-    const regex = /^[a-zA-Z0-9,\s.?!@%*()#$^&+=\-_[\]/]{0,15}$/;
+    const regex = /^[a-zA-Z0-9,\s.?!'@%*()#$^&+=\-_[\]/]{0,15}$/;
     return (regex.test(value) === true);
   }
 
@@ -666,7 +689,8 @@ function App() {
   }
 
   const saveBib = () => {    
-    // If key is known, update name and city but don't change bib number or Facebook UID
+    // If key is known (user signed in), update name and city
+    // but don't change bib number or Facebook UID
     if (bibKey) {
       firebase.database().ref(dataRoot + '/bibs/' + bibKey).update({
         name: name,
@@ -677,10 +701,11 @@ function App() {
         city: city,
         bib: bibNum,
       });
-      outputPng(bibNum);
+      outputBibPng(bibNum);
     }
     else {
-      // increment the counter via transaction
+      // otherwise create new entry
+      // increment counter via transaction
       firebase.database().ref().child(dataRoot + '/counter').transaction(function(currentCount) {
         return (currentCount || 0) + 1
       }, function(err, committed, snap) {
@@ -694,6 +719,7 @@ function App() {
             name: name,
             city: city,
             uid: firebaseUserId, // may be null, which Firebase omits
+            create_time: getEpoch(),
           });
           // If signed in, remember key of created entry for updates
           if (firebaseUserId) {
@@ -704,26 +730,42 @@ function App() {
             city: city,
             bib: snap.val(),
           });
-          outputPng(snap.val());
+          outputBibPng(snap.val());
         }
       });
     }
   };
 
-  function outputAwardPng() {
+  const printAward = () => {
+    firebase.analytics().logEvent('download_award', {
+      type: 'certificate',
+      name: name,
+      city: city,
+    });
+    outputAwardPdf();
+  };
+
+  function outputAwardPdf() {
     awardCanvasRef.current.renderAll();
     const dataURL = awardCanvasRef.current.toDataURL({
       format: 'png',
+      multiplier: 100/72, // scale up to 100dpi
     });
-    const link = document.createElement('a');
-    link.download = `${defaults.awardBaseFilename}.png`;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    var pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'in',
+      format: 'letter',
+    });
+    pdf.setProperties({
+      title: 'Totally Spaced Out Virtual 10K Award Certificate',
+      author: 'Team FX Austin',
+    });
+    pdf.addImage(dataURL, 'PNG', 0, 0, 11, 8.5); // w and h params in units specified above
+    pdf.save(`${defaults.awardBaseFilename}.pdf`);
   };
 
-  function outputPng(savedNum) {
+  function outputBibPng(savedNum) {
+    // Set text on print canvas to saved bib number
     bibTextRef2.current.set('text', savedNum.toString().padStart(bibNumberPad, '0'));
     printCanvasRef.current.renderAll();
 
@@ -736,7 +778,7 @@ function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    // Reset fields and advance number if not logged in
+    // Reset fields and advance number unless signed in
     if (!firebaseUserId) {
       getBibNumber();
       setName('');
@@ -751,7 +793,6 @@ function App() {
       </div>
       <h2 className="header">“TOTALLY SPACED OUT” VIRTUAL 10K - benefiting the SAFE Children’s Shelter</h2>
       <h2 className="subheader">SUNDAY, APRIL 5TH, 2020 &ndash; 8am-9am CST</h2>
-
       <div className="row">
         <div className="leftCol">
           Team FX invites EVERYONE to participate in this FREE, SAFE, grassroots, "spaced out" virtual community benefit event! No fees or registration required. Please just observe all safety orders for your area, and follow the simple steps below.
@@ -762,16 +803,15 @@ function App() {
               <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Why the “TOTALLY SPACED OUT” 10K?</Link>
             </li>
             <li>
-              <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TSO10K-SAFETY.m4v">Watch Coach Gary's safety video!</Link>
+              <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TSO10K-SAFETY.m4v">Watch Coach Gary's safety video</Link>
             </li>
-            { (isValid(name) && name) && (
             <li>
-              <Link className={classes.link} onClick={outputAwardPng}>Download award certificate</Link>
+              <Link className={classes.link} href="#form">Print your award certificate below!</Link>
             </li>
-            )}
           </ul>
         </div>
       </div>
+
       <h2>1. Create Your Bib</h2>
       { loading && (
       <div id="loading">
@@ -782,10 +822,10 @@ function App() {
         <div className="row">
           <div className="leftCol">
             <canvas id="award-canvas" className="hidden" />
-            <canvas id="c" />
-            <canvas id="d" className="hidden" />
+            <canvas id="display-canvas" />
+            <canvas id="print-canvas" className="hidden" />
           </div>
-          <div className="rightCol">
+          <div id="form" className="rightCol">
             <TextField
               id="name"
               label="Name"
@@ -820,10 +860,8 @@ function App() {
               onChange={cityChanged}
               onBlur={cityBlurred}
             />
-
             <div className={authLoaded ? "authloaded" : "hidden"}>
               <div className="signinBox">
-                
                 <div className={firebaseUserId ? "signedin" : "hidden"}>
                   <div className="userSignedIn">
                     <div className="userAvatar">
@@ -850,7 +888,17 @@ function App() {
               className={classes.button}
               onClick={saveBib}
             >
-              Download and Print
+              Download and Print Bib
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              color="primary"
+              disabled={!(name && isValid(name))}
+              className={classes.button}
+              onClick={printAward}
+            >
+              Print Award Certificate
             </Button>
             <div className="footnote">
               <p>
@@ -882,6 +930,7 @@ function App() {
           </Button>
         </div>
       </div>
+
       <h2>3. Join the Movement</h2>
       <div className="row">
         <div className="leftCol">
@@ -902,6 +951,7 @@ function App() {
           </Button>
         </div>
       </div>
+
       <h2>4. Party On!</h2>
       <div className="row">
         <div className="leftCol">
