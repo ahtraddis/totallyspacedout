@@ -159,3 +159,24 @@ li {
 p {
   margin-top: 0;
 }
+/* Slider */
+.slide-content {
+  font-weight: normal;
+  font-family: 'HelveticaNeue-CondensedBold';
+  font-size: 1.6em;
+}
+.slide-city {
+  font-size: 1.2em;
+}
+.slide-bib {
+  opacity: .8;
+  font-weight: normal;
+  color: #777;
+}
+.awssld {
+  height: 50px;
+  --content-background-color: #fff !important;
+}
+.awssld__timer {
+  background-color: transparent !important;
+}

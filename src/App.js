@@ -4,6 +4,10 @@ import { makeStyles } from '@material-ui/core/styles';
 import './App.css';
 import { fabric } from 'fabric';
 import jsPDF from 'jspdf';
+import AwesomeSlider from 'react-awesome-slider';
+import withAutoplay from 'react-awesome-slider/dist/autoplay';
+import 'react-awesome-slider/dist/styles.css';
+const AutoplaySlider = withAutoplay(AwesomeSlider);
 
 require('firebase/database');
 require('firebase/analytics');
@@ -56,6 +60,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [displayName, setDisplayName] = useState(null);
+  const [bibs, setBibs] = useState(null);
   
   // screen canvas
   const canvasRef = useRef(null);
@@ -89,6 +94,57 @@ function App() {
   const bibNumberPad = 3;
   const fontFamily = 'HelveticaNeue-CondensedBold, Roboto Condensed';
   const dataRoot = '/'; // change to '/TEST' for dev/test
+
+  function shuffle(array) {
+    var currentIndex = array.length;
+    var temporaryValue, randomIndex;
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+    return array;
+  };
+
+  function Slide({bib, name, city}) {
+    return (
+      <div key={bib} className="slide">
+        { (name && isValid(name)) && (
+          <div className="slide-content">
+            <span className="slide-name">{name}</span>
+            <span> </span>
+            <span className="slide-bib">{bib.toString().padStart(bibNumberPad, '0')}</span>
+          </div>
+        )}
+        { (city && isValid(city)) && (
+          <div className="slide-city">{city}</div>
+        )}
+      </div>
+    )
+  }
+
+  function BibSlider() {
+    return (
+      <AutoplaySlider
+        bullets={false}
+        organicArrows={false}
+        className="slider"
+        play={true}
+        infinite={true}
+        mobileTouch={false}
+        buttons={false}
+        cancelOnInteraction={false} // should stop playing on user interaction
+        interval={2000}
+      >
+        {bibs.map(bib => Slide(bib))}
+      </AutoplaySlider>
+    )
+  }
 
   const getBibNumber = () => {
     // get current counter value (the last bib number used)
@@ -595,9 +651,31 @@ function App() {
       //   setShowBib(true);
       // }
     };
-    const ref = firebase.database().ref(dataRoot + '/counter').on('value', counterChanged);
+    // filter incomplete or test values from slider display
+    function isDisplayableBib(bib) {
+      const regex = /test/i;
+      return (bib.name && isValid(bib.name) && bib.city && isValid(bib.city) &&
+        (regex.test(bib.name) === false) && (regex.test(bib.city) === false) &&
+        (bib.name !== "BIB") && (bib.name !== "ERR"));
+    }
+    function bibsChanged(snapshot) {
+      let bibs = snapshot.val();
+      var displayBibs = [];
+      Object.keys(bibs).map((bib) => {
+        let entry = bibs[bib];
+        if (isDisplayableBib(entry)) {
+          displayBibs.push(entry);
+        }
+        return null
+      })
+      setBibs(shuffle(displayBibs));
+    };
+    const counterRef = firebase.database().ref(dataRoot + '/counter').on('value', counterChanged);
+    const bibsRef = firebase.database().ref(dataRoot + '/bibs').on('value', bibsChanged);
+    
     return () => {
-      ref.off('value', counterChanged);
+      counterRef.off('value', counterChanged);
+      bibsRef.off('value', bibsChanged);
     }
   }, []);
 
@@ -795,7 +873,12 @@ function App() {
       <h2 className="subheader">SUNDAY, APRIL 5TH, 2020 &ndash; 8am-9am CST</h2>
       <div className="row">
         <div className="leftCol">
-          Team FX invites EVERYONE to participate in this FREE, SAFE, grassroots, "spaced out" virtual community benefit event! No fees or registration required. Please just observe all safety orders for your area, and follow the simple steps below.
+          <p>Team FX invites EVERYONE to participate in this FREE, SAFE, grassroots, "spaced out" virtual community benefit event! No fees or registration required. Please just observe all safety orders for your area, and follow the simple steps below.</p>
+          { authLoaded && bibs && (
+            <div className="bib-slider">
+              <BibSlider />
+            </div>
+          )}
         </div>
         <div className="rightCol">
           <ul>
