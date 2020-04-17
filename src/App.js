@@ -93,8 +93,9 @@ function App() {
   const bibCornerRadius = 25;
   const bibNumberPad = 3;
   const fontFamily = 'HelveticaNeue-CondensedBold, Roboto Condensed';
-  const dataRoot = '/'; // change to '/TEST' for dev/test
+  const dataRoot = '/'; // change to '/TEST' to target a test/dev branch of the JSON tree
 
+  // Knuth shuffle
   function shuffle(array) {
     var currentIndex = array.length;
     var temporaryValue, randomIndex;
@@ -111,6 +112,7 @@ function App() {
     return array;
   };
 
+  // Slide component for use with race participant slider
   function Slide({bib, name, city}) {
     return (
       <div key={bib} className="slide">
@@ -128,6 +130,7 @@ function App() {
     )
   }
 
+  // Slider to credit random race participants
   function BibSlider() {
     return (
       <AutoplaySlider
@@ -138,7 +141,7 @@ function App() {
         infinite={true}
         mobileTouch={false}
         buttons={false}
-        cancelOnInteraction={false} // should stop playing on user interaction
+        cancelOnInteraction={false}
         interval={2000}
       >
         {bibs.map(bib => Slide(bib))}
@@ -151,7 +154,7 @@ function App() {
     firebase.database().ref(dataRoot + '/counter').once('value').then(function(snap) {
       setBibNumber(snap.val() + 1);
       //console.log("getBibNumber(): ", snap.val() + 1);
-      setShowBib(true);
+      setShowBib(true); // enable bib display
       setLoading(false);
     });
   };
@@ -249,9 +252,9 @@ function App() {
           }
           if (authResult.additionalUserInfo) {
             //console.log("additionalUserInfo: ", authResult.additionalUserInfo);
-            // includes '.isNewUser'
+            // note: includes '.isNewUser' in case useful later
           }
-          // Return type of false means don't redirect automatically
+          // Return type of false means don't redirect to redirectUrl automatically
           return false;
         },
         uiShown: function() {
@@ -453,6 +456,7 @@ function App() {
     return textGroup;
   };
 
+  // [eschwartz-TODO] Copy of createTextGroup() targeted at print canvas. Merge into single function.
   function createTextGroupForPrint(num) {
     bibTextRef2.current = new fabric.Text(num.toString().padStart(bibNumberPad, '0'), {
       fontFamily: fontFamily,
@@ -499,16 +503,17 @@ function App() {
     return textGroup;
   };
 
+  // Add award elements to the specified canvas
   function addAwardElements(canvas) {
-    // add elements to printable award canvas
+    // add elements to printable 11 x 8.5" award canvas
     // certificate reads as follows:
-    // (team fx logo)
-    // congratulates
-    // (name field)
-    // for participation in the
-    // (event logo)
-    // presented Sunday, April 5, 2020 in (AUSTIN, TX | city field)
-    // in gratitude for your service to the SAFE Children's Shelter.
+    //   (team fx logo)
+    //   congratulates
+    //   (name field)
+    //   for participation in the
+    //   (event logo)
+    //   presented Sunday, April 5, 2020 in (AUSTIN, TX | city field)
+    //   in gratitude for your service to the SAFE Children's Shelter.
     fabric.Image.fromURL('./images/AwardCertificateFrameTrans3300x2550.png', function(oImg) {
       oImg.set({
         selectable: false,
@@ -679,6 +684,7 @@ function App() {
     }
   }, []);
 
+  // Run once on component mount
   useEffect(() => {
     // init display canvas
     canvasRef.current = new fabric.StaticCanvas("display-canvas");
@@ -688,7 +694,7 @@ function App() {
     addImages(canvasRef.current);
     canvasRef.current.add(createTextGroup(bibNum));
     canvasRef.current.add(createTextGroup2());
-    // init print canvas (copy)
+    // init print canvas (copy with fixed text values and print scale)
     printCanvasRef.current = new fabric.StaticCanvas("print-canvas");
     printCanvasRef.current.setDimensions({width: canvasWidth, height: canvasHeight});
     printCanvasRef.current.add(createBibGroup());
@@ -827,7 +833,7 @@ function App() {
     awardCanvasRef.current.renderAll();
     const dataURL = awardCanvasRef.current.toDataURL({
       format: 'png',
-      multiplier: 100/72, // scale up to 100dpi
+      multiplier: 100/72, // scale up to 100dpi (compromise between quality and size)
     });
     var pdf = new jsPDF({
       orientation: 'landscape',
