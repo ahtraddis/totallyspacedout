@@ -1,68 +1,143 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 'Totally Spaced Out' Virtual 10K - Race Bib Generator
 
-## Available Scripts
+A print-at-home race bib generator in the time of COVID-19.
 
-In the project directory, you can run:
+![](public/screenshots/TotallySpacedOutScreenshot.png)
 
-### `yarn start`
+## About This
+The 43rd Annual Austin-American Statesman Cap10K scheduled for April 5, 2020 was cancelled due to the coronavirus, but Coach Gary came up with a brilliant idea: to organize a safe, alternative virtual race that our [running team][teamfx-donate] members &ndash; spaced at least 6 feet apart &ndash; could run or walk wherever they are.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+But what's a race without an official bib number to wear and celebrate in your selfies at the virtual finish line?
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+So we built this [bib generator site][tso] just a few days before the event, and invited the whole community to participate. The event raised over $6,000 for the [SAFE Austin Children's Shelter][safe].
 
-### `yarn test`
+We hope this success will inspire similar efforts on behalf of those in need in your community, too.
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Built with
+* [React](https://reactjs.org/)
+* [Google Firebase][firebase], [Analytics][analytics], and [Hosting][firebase-hosting]
+* [Facebook Login][facebook-login]
+* [Fabric.js][fabric] Javascript Canvas Library
 
-### `yarn build`
+## Getting Started
+The code in this repo is built around a specific event but can be easily modified to support a virtual race or similar event of your own.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+By default, the web app:
+* generates a printable bib (PNG) with unique bib number, participant name, and city
+* outputs an award certificate (PDF) when the event is complete
+* logs bib entries in a Firebase Realtime Database
+* displays an animated slider listing random participants
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+### Prerequisites
+* (optional) [Facebook Developer Account][facebook-app-dev] and Application ID
+* Familiarity with [Fabric.js][fabric] is helpful but not required
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Installation
+1. Set up a free [Firebase account][firebase] and start a new Firebase project.
+2. Create a new Firebase [Realtime Database][firebase-rtdb] and set up [rules][firebase-rules].
+3. Install the [Firebase CLI][firebase-cli].
+4. Set up [Firebase Hosting][firebase-hosting].
+5. Clone this repo.
+```sh
+git clone https://github.com/ahtraddis/totallyspacedout.git
+```
+6. Install NPM packages
+```sh
+npm install
+```
 
-### `yarn eject`
+### Customization
+1. Edit the `defaults` and `firebaseConfig` objects in `App.js` to suit your event and Firebase configuration:
+```JS
+const defaults = {
+    name: "YOUR DEFAULT NAME",
+    city: "YOUR DEFAULT CITY",
+    missionText: "YOUR SLOGAN OR MISSION STATEMENT",
+    missionSubText: "www.yoursiteurl.com",
+    baseFilename: "YourBibFilenamePrefix_",
+    awardBaseFilename: "YourAwardCertificateFilename",
+    tosUrl: "https://www.yoursiteurl.com/terms",
+    privacyPolicyUrl: "https://yoursiteurl.com/privacy",
+  };
+...
+const firebaseConfig = {
+    apiKey: "YOUR-API-KEY",
+    authDomain: "YOUR-AUTH-DOMAIN",
+    databaseURL: "YOUR-DATABASE-URL",
+    projectId: "YOUR-PROJECT-ID",
+    storageBucket: "YOUR-STORAGE-BUCKET",
+    messagingSenderId: "YOUR-SENDER-ID",
+    appId: "YOUR-APP-ID",
+    measurementId: "YOUR-MEASUREMENT-ID"
+  };
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+2. Edit the following functions to modify the bib and award certificate layouts:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+* `createBibGroup()` - generates a standard race bib outline
+* `createTextGroup()` - generates bib number, name, and city fields
+* `createTextGroup2()` - generates mission statement and site URL
+* `addImages()` - adds logo images and thumbnails to canvas
+* `addAwardElements()` - generates the award certificate PDF
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+<img width="350" src="public/images/AwardCertificateExample.png" />
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+See the [Fabric.js][fabric] docs for usage info.
 
-## Learn More
+3. Edit the HTML body, substituting your own event info, links, and images.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Build
+```sh
+yarn build
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Deploy
+```sh
+firebase deploy
+```
 
-### Code Splitting
+## Roadmap
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+This was created in just a few days, so next steps will be to clean up and abstract things to make it more easily reuseable for ongoing events. Let us know your ideas and needs and we'll try to incorporate them.
 
-### Analyzing the Bundle Size
+| Status | Milestone | ETA |
+| :---: | :--- | :---: |
+| | Abstract text, graphics and layouts via configurable templates | |
+| | Add support for ongoing team/community events with the same participant base | |
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+## License
 
-### Making a Progressive Web App
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+If you appreciate and benefit from this project, please consider making a tax-deductible donation to SAFE Austin via the [Team FX Donate page][teamfx-donate].
 
-### Advanced Configuration
+## Contact
+Eric Schwartz - eric@whyanext.com
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+Project Link: [https://github.com/ahtraddis/totallyspacedout][repo]
 
-### Deployment
+## Acknowledgements
+* [Team FX Austin][teamfx] and our amazing coach Gary Walker
+* [SAFE Austin Children's Shelter][safe]
+* [React Awesome Slider][react-awesome-slider]
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+---
+This project was bootstrapped with [Create React App][cra].
 
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+[repo]: https://github.com/ahtraddis/totallyspacedout.git
+[tso]: https://www.totallyspacedout.org
+[safe]: https://www.safeaustin.org/
+[teamfx]: https://www.teamfxaustin.org/
+[teamfx-donate]: https://www.teamfxaustin.org/newsite/sponsor-a-runner/
+[teamfx-tso]: https://www.teamfxaustin.org/newsite/totally-spaced-out-10k/
+[cra]: https://github.com/facebook/create-react-app
+[fabric]: https://fabricjs.com
+[react-awesome-slider]: https://github.com/rcaferati/react-awesome-slider
+[firebase]: https://firebase.google.com/
+[firebase-cli]: https://firebase.google.com/docs/cli
+[firebase-rtdb]: https://firebase.google.com/docs/database
+[firebase-hosting]: https://firebase.google.com/docs/hosting/quickstart
+[firebase-rules]: https://firebase.google.com/docs/database/security
+[analytics]: https://marketingplatform.google.com/about/analytics/
+[facebook-app-dev]: https://developers.facebook.com/docs/apps/
+[facebook-login]: https://developers.facebook.com/docs/facebook-login/
