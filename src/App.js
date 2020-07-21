@@ -44,8 +44,8 @@ function App() {
     city: "SPICEWOOD, TX",
     missionText: "CREATING A WORLD\nWITHOUT CHILD ABUSE & NEGLECT\nONE STEP AT A TIME",
     missionSubText: "www.teamfxaustin.org",
-    baseFilename: "TotallySpacedOut_Virtual10K_BIB_",
-    awardBaseFilename: "TotallySpacedOut_Virtual10K_Award",
+    baseFilename: "TotallySpacedOut_Virtual13_1_BIB_",
+    awardBaseFilename: "TotallySpacedOut_Virtual13_1_Award",
     tosUrl: "https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions",
     privacyPolicyUrl: "https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions",
   };
@@ -93,7 +93,8 @@ function App() {
   const bibCornerRadius = 25;
   const bibNumberPad = 3;
   const fontFamily = 'HelveticaNeue-CondensedBold, Roboto Condensed';
-  const dataRoot = '/'; // change to '/TEST' to target a test/dev branch of the JSON tree
+  // Hardcoding an event ID as root for 7/26/20 Virtual 13.1K
+  const dataRoot = '/-MCjNy10HYJunFcXc5Vk/'; // change to '/TEST' to target a test/dev branch of the JSON tree
 
   // Knuth shuffle
   function shuffle(array) {
@@ -586,7 +587,7 @@ function App() {
     });
     canvas.add(participatingText);
 
-    fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
+    fabric.Image.fromURL('./images/2020-07-26_TSOLogo600.png', function(oImg) {
       oImg.set({
         selectable: false,
         top: 320,
@@ -612,7 +613,7 @@ function App() {
   }
 
   function addImages(canvas) {
-    fabric.Image.fromURL('./images/TSOLogo600.png', function(oImg) {
+    fabric.Image.fromURL('./images/2020-07-26_TSOLogo600.png', function(oImg) {
       oImg.set({
         selectable: false,
         left: canvasWidth / 2,
@@ -666,13 +667,15 @@ function App() {
     function bibsChanged(snapshot) {
       let bibs = snapshot.val();
       var displayBibs = [];
-      Object.keys(bibs).map((bib) => {
-        let entry = bibs[bib];
-        if (isDisplayableBib(entry)) {
-          displayBibs.push(entry);
-        }
-        return null
-      })
+      if (bibs) {
+        Object.keys(bibs).map((bib) => {
+          let entry = bibs[bib];
+          if (isDisplayableBib(entry)) {
+            displayBibs.push(entry);
+          }
+          return null
+        })
+      }
       setBibs(shuffle(displayBibs));
     };
     const counterRef = firebase.database().ref(dataRoot + '/counter').on('value', counterChanged);
@@ -841,7 +844,7 @@ function App() {
       format: 'letter',
     });
     pdf.setProperties({
-      title: 'Totally Spaced Out Virtual 10K Award Certificate',
+      title: 'Totally Spaced Out Virtual 13.1 Award Certificate',
       author: 'Team FX Austin',
     });
     pdf.addImage(dataURL, 'PNG', 0, 0, 11, 8.5); // w and h params in units specified above
@@ -875,11 +878,11 @@ function App() {
       <div className="banner">
         <img alt="" src="./images/TeamFXheaderbar2019f.png" />
       </div>
-      <h2 className="header">“TOTALLY SPACED OUT” VIRTUAL 10K - benefiting the SAFE Children’s Shelter</h2>
-      <h2 className="subheader">SUNDAY, APRIL 5TH, 2020 &ndash; 8am-9am CST</h2>
+      <h2 className="header">“TOTALLY SPACED OUT” VIRTUAL 13.1 - benefiting the SAFE Children’s Shelter</h2>
+      <h2 className="subheader">SUNDAY, JULY 26TH, 2020 &ndash; 6:30am-9:30am CST</h2>
       <div className="row">
         <div className="leftCol">
-          <p>Team FX invites EVERYONE to participate in this FREE, SAFE, grassroots, "spaced out" virtual community benefit event! No fees or registration required. Please just observe all safety orders for your area, and follow the simple steps below.</p>
+          <p><Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-13point1/">Click here to register</Link></p>
           { authLoaded && bibs && (
             <div className="bib-slider">
               <BibSlider />
@@ -889,7 +892,7 @@ function App() {
         <div className="rightCol">
           <ul>
             <li>
-              <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-10k">Why the “TOTALLY SPACED OUT” 10K?</Link>
+              <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-13point1">Why the “TOTALLY SPACED OUT” Virtual 13.1?</Link>
             </li>
             <li>
               <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/wp-content/uploads/2020/04/TSO10K-SAFETY.m4v">Watch Coach Gary's safety video</Link>
@@ -901,7 +904,7 @@ function App() {
         </div>
       </div>
 
-      <h2>1. Create Your Bib</h2>
+      {/* <h2>Create Your Bib</h2> */}
       { loading && (
       <div id="loading">
         <CircularProgress />
@@ -993,15 +996,15 @@ function App() {
               <p>
                 Print it out and cut on the dotted lines, but don't run with scissors! Use a hole punch for the safety pin holes.
               </p>
-              <p>
-                By participating in this event, you agree to the “Totally Spaced Out” Virtual 10K <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions">Terms and Conditions</Link>.
-              </p>
+              {/*<p>
+                By participating in this event, you agree to the “Totally Spaced Out” Virtual 13.1 <Link className={classes.link} target="_blank" href="https://www.teamfxaustin.org/newsite/totally-spaced-out-virtual-10k-terms-and-conditions">Terms and Conditions</Link>.
+              </p>*/}
             </div>
           </div>
         </div>
       </div>
 
-      <h2>2. Lift Up Your Community</h2>
+      {/* <h2>2. Lift Up Your Community</h2>
       <div className="row">
         <div className="leftCol">
           Hold up the continuing needs of children already in crisis during this time with your highest thoughts and prayers. Donations are not required to participate, but please consider making a 100% tax-deductible donation of <strong>$10 to the SAFE Children's Shelter</strong> by sponsoring one of our runners by April 5th.
@@ -1059,7 +1062,7 @@ function App() {
             Learn More
           </Button>
         </div>
-      </div>
+      </div> */}
       <h4 className="tagline">
         IN A TIME OF ISOLATION AND UNCERTAINTY, WE ARE PROOF OF LIFE!
       </h4>
