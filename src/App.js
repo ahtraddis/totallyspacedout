@@ -732,7 +732,7 @@ function App() {
     printCanvasRef.current.renderAll();
 
     displayNameRef.current.set('text', name ? name.toUpperCase() : "");
-    presentedTextRef.current.set('text', "presented Sunday, April 5, 2020 in " + ((city && isValid(city)) ? city : "Austin, Texas") + "\nin gratitude for your service to the SAFE Children's Shelter.");
+    presentedTextRef.current.set('text', "presented Sunday, July 26, 2020 in " + ((city && isValid(city)) ? city : "Austin, Texas") + "\nin gratitude for your service to the SAFE Children's Shelter.");
     awardCanvasRef.current.renderAll();
 
   }, [bibNum, name, city, displayName, defaults]);
